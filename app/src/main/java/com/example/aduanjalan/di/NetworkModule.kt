@@ -1,10 +1,13 @@
 package com.example.aduanjalan.di
 
+import android.content.Context
 import com.example.aduanjalan.data.remote.api.LaravelApiService
 import com.example.aduanjalan.data.remote.api.OverpassApiService
+import com.example.aduanjalan.ui.utils.NetworkMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -16,6 +19,11 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    @Provides
+    @Singleton
+    fun provideNetworkMonitor(@ApplicationContext context: Context): NetworkMonitor {
+        return NetworkMonitor(context)
+    }
 
     @Provides
     fun provideLogging() = HttpLoggingInterceptor().apply {
@@ -49,4 +57,5 @@ object NetworkModule {
             .build()
             .create(OverpassApiService::class.java)
     }
+
 }

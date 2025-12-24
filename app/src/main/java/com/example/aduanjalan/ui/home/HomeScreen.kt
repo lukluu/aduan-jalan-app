@@ -8,8 +8,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -36,9 +38,12 @@ import com.example.aduanjalan.ui.component.BottomBar
 import com.example.aduanjalan.ui.navigation.Screen
 import com.example.aduanjalan.ui.theme.PrimaryColor
 import com.example.aduanjalan.ui.utils.capitalizeWords
+import com.example.aduanjalan.ui.utils.shimmerEffect
 import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,6 +55,8 @@ fun HomeScreen(
     val userName by viewModel.userName.collectAsState()
     val latestReports by viewModel.latestReports.collectAsState()
     val isLoadingReports by viewModel.isLoadingReports.collectAsState()
+    // 1. Ambil state refreshing
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     val context = LocalContext.current
     val isDarkTheme = isSystemInDarkTheme()
@@ -70,7 +77,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .background(PrimaryColor)
         ) {
-            // Header
+            // Header (Tetap Statis)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -106,7 +113,7 @@ fun HomeScreen(
                 }
             }
 
-            // Konten Menu dengan Carousel
+            // Konten Menu dengan Carousel & SwipeRefresh
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -114,69 +121,112 @@ fun HomeScreen(
                 color = surfaceMenuColor,
                 shape = RoundedCornerShape(topStart = 30.dp, topEnd = 30.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 24.dp)
+                // 2. Bungkus Konten Surface dengan SwipeRefresh
+                SwipeRefresh(
+                    state = rememberSwipeRefreshState(isRefreshing),
+                    onRefresh = { viewModel.refreshHome() },
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Text(
-                        text = "Aduan Masuk Terbaru",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = 24.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Box(
+                    // 3. Tambahkan verticalScroll agar konten bisa ditarik
+                    Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-
-                        contentAlignment = Alignment.Center
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()) // PENTING agar swipe terdeteksi
+                            .padding(vertical = 24.dp)
                     ) {
-                        if (isLoadingReports) {
-                            CircularProgressIndicator()
-                        } else if (latestReports.isNotEmpty()) {
-                            LatestReportsCarousel(
-                                reports = latestReports,
-                                navController = navController
-                            )
-                        } else {
-                            Text("Belum ada aduan terbaru.", color = Color.Gray)
+                        Text(
+                            text = "Aduan Masuk Terbaru",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // --- BAGIAN CAROUSEL DENGAN SKELETON ---
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isLoadingReports) {
+                                // Tampilkan Skeleton saat load awal (bukan refresh)
+                                CarouselSkeletonLoader()
+                            } else if (latestReports.isNotEmpty()) {
+                                LatestReportsCarousel(
+                                    reports = latestReports,
+                                    navController = navController
+                                )
+                            } else {
+                                Text("Belum ada aduan terbaru.", color = Color.Gray)
+                            }
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                    Column(Modifier.padding(horizontal = 24.dp)) {
-                        // --- Memanggil Composable Tombol Utama yang Baru ---
-                        PrimaryMenuButton(
-                            text = "Buat Aduan Baru",
-                            subText = "Laporkan kerusakan jalan di sini",
-                            icon = Icons.Default.CameraAlt,
-                            onClick = { navController.navigate(Screen.UploadImage.route) }
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        // --- Memanggil Composable Tombol Sekunder yang Baru ---
-                        SecondaryMenuButton(
-                            text = "Riwayat Aduan Saya",
-                            icon = Icons.Default.Description,
-                            onClick = { navController.navigate(Screen.MyReports.route) }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp)) // Jarak lebih kecil antar tombol sekunder
-                        SecondaryMenuButton(
-                            text = "Peta Persebaran Aduan",
-                            icon = Icons.Default.Map,
-                            onClick = { navController.navigate(Screen.AllReports.route) }
-                        )
+                        Column(Modifier.padding(horizontal = 24.dp)) {
+                            PrimaryMenuButton(
+                                text = "Buat Aduan Baru",
+                                subText = "Laporkan kerusakan jalan di sini",
+                                icon = Icons.Default.CameraAlt,
+                                onClick = { navController.navigate(Screen.UploadImage.route) }
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                            SecondaryMenuButton(
+                                text = "Riwayat Aduan Saya",
+                                icon = Icons.Default.Description,
+                                onClick = { navController.navigate(Screen.MyReports.route) }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            SecondaryMenuButton(
+                                text = "Peta Persebaran Aduan",
+                                icon = Icons.Default.Map,
+                                onClick = { navController.navigate(Screen.AllReports.route) }
+                            )
+                            // Spacer tambahan agar konten tidak terpotong di paling bawah
+                            Spacer(modifier = Modifier.height(24.dp))
+                        }
                     }
                 }
             }
         }
     }
 }
+@Composable
+fun CarouselSkeletonLoader() {
+    Column(
+        modifier = Modifier.padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Kartu Dummy yang Shimmering
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(120.dp) // Samakan tinggi dengan HorizontalPager di LatestReportsCarousel
+                .clip(RoundedCornerShape(16.dp))
+                .shimmerEffect() // Panggil modifier shimmer
+        )
 
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Indikator Dummy (Titik-titik)
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(3) { // Buat 3 titik dummy
+                Box(
+                    modifier = Modifier
+                        .padding(2.dp)
+                        .clip(CircleShape)
+                        .size(8.dp)
+                        .shimmerEffect() // Titik juga shimmer
+                )
+            }
+        }
+    }
+}
 @OptIn(ExperimentalPagerApi::class)
 @Composable
 fun LatestReportsCarousel(

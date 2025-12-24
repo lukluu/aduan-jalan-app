@@ -31,6 +31,7 @@ import com.example.aduanjalan.data.remote.response.MyReportResponse
 import com.example.aduanjalan.ui.component.BottomBar
 import com.example.aduanjalan.ui.component.SuccessPopup
 import com.example.aduanjalan.ui.theme.PrimaryColor
+import com.example.aduanjalan.ui.utils.shimmerEffect
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
@@ -41,10 +42,14 @@ fun MyReportScreen(
     navController: NavController,
     viewModel: MyReportsViewModel = hiltViewModel()
 ) {
-    // State dan LaunchedEffect tidak ada yang berubah
     val reports by viewModel.reports.collectAsState()
     val isRefreshing by viewModel.refreshing.collectAsState()
+    val isLoading by viewModel.loading.collectAsState() // Ambil state loading
     val deleteStatus by viewModel.deleteStatus.collectAsState()
+
+    // ... (Kode state lain seperti showSuccessPopup, searchQuery, pagerState TETAP SAMA) ...
+    // ... (Kode LaunchedEffect deleteStatus & navBackStackEntry TETAP SAMA) ...
+    // ... (Variable tabs, filter logic TETAP SAMA) ...
 
     var showSuccessPopup by remember { mutableStateOf(false) }
     var successMessage by remember { mutableStateOf("") }
@@ -79,6 +84,7 @@ fun MyReportScreen(
             viewModel.clearDeleteStatus()
         }
     }
+
     val navBackStackEntry = navController.currentBackStackEntry
     LaunchedEffect(navBackStackEntry) {
         navBackStackEntry?.savedStateHandle
@@ -91,14 +97,13 @@ fun MyReportScreen(
             }
     }
 
-    // --- LANGKAH 1: DEFINISIKAN WARNA BERDASARKAN TEMA ---
+    // Definisi Warna
     val isDarkTheme = isSystemInDarkTheme()
     val scaffoldBackgroundColor = if (isDarkTheme) Color(0xFF121212) else Color(0xFFFAFAFA)
     val tabRowColor = if (isDarkTheme) Color(0xFF1F1F1F) else Color.White
     val unselectedTabColor = if (isDarkTheme) Color.LightGray.copy(alpha = 0.7f) else Color.Gray
 
     Scaffold(
-        // Terapkan warna latar belakang
         containerColor = scaffoldBackgroundColor,
         topBar = {
             TopAppBar(
@@ -113,18 +118,17 @@ fun MyReportScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding)
-                // Hapus background statis dari sini
             ) {
-                // OutlinedTextField dari Material 3 sudah mendukung tema gelap secara default
+                // Search Bar
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
                     placeholder = { Text("Cari lokasi atau jenis kerusakan") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") }, // tint dihapus, M3 menanganinya
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Clear, contentDescription = "Clear") // tint dihapus
+                                Icon(Icons.Default.Clear, contentDescription = "Clear")
                             }
                         }
                     },
@@ -135,21 +139,17 @@ fun MyReportScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
 
+                // Tab Row
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
-                    // Terapkan warna latar belakang TabRow
                     containerColor = tabRowColor,
-                    contentColor = PrimaryColor, // Warna untuk item yang aktif
+                    contentColor = PrimaryColor,
                     modifier = Modifier.padding(horizontal = 8.dp)
                 ) {
                     tabs.forEachIndexed { index, title ->
                         Tab(
                             selected = pagerState.currentPage == index,
-                            onClick = {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            },
+                            onClick = { scope.launch { pagerState.animateScrollToPage(index) } },
                             text = {
                                 val count = if (index == 0) allReportsFiltered.size else completedReportsFiltered.size
                                 Text(
@@ -157,12 +157,12 @@ fun MyReportScreen(
                                     fontWeight = if (pagerState.currentPage == index) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
-                            // Atur warna untuk tab yang tidak dipilih
                             unselectedContentColor = unselectedTabColor
                         )
                     }
                 }
 
+                // Pager Content
                 HorizontalPager(
                     state = pagerState,
                     modifier = Modifier.fillMaxSize()
@@ -177,8 +177,10 @@ fun MyReportScreen(
                         onRefresh = { viewModel.refreshReports() },
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        // UPDATE: Kirim parameter isLoading ke ReportList
                         ReportList(
                             reports = reportsToShow,
+                            isLoading = isLoading, // <-- Parameter Baru
                             onDelete = { reportId -> viewModel.deleteReport(reportId) },
                             onClick = { reportId -> navController.navigate("reportDetailMap/$reportId") }
                         )
@@ -199,14 +201,19 @@ fun MyReportScreen(
 @Composable
 private fun ReportList(
     reports: List<MyReportResponse>,
+    isLoading: Boolean, // <-- Terima parameter isLoading
     onDelete: (Int) -> Unit,
     onClick: (Int) -> Unit
 ) {
-    // --- LANGKAH 2: BUAT ReportList MENJADI THEME-AWARE ---
     val isDarkTheme = isSystemInDarkTheme()
     val emptyTextColor = if (isDarkTheme) Color.LightGray.copy(alpha = 0.7f) else Color.Gray
 
-    if (reports.isEmpty()) {
+    // LOGIKA SKELETON LOADING
+    if (isLoading && reports.isEmpty()) {
+        // Tampilkan Skeleton jika sedang loading DAN data belum ada
+        ReportListSkeleton()
+    } else if (reports.isEmpty()) {
+        // Tampilkan Pesan Kosong jika TIDAK loading tapi data kosong
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -222,6 +229,7 @@ private fun ReportList(
             }
         }
     } else {
+        // Tampilkan Data Asli
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
@@ -237,7 +245,6 @@ private fun ReportList(
         }
     }
 }
-
 
 @Composable
 fun ReportItem(
@@ -395,5 +402,92 @@ fun ReportItem(
             title = { Text("Hapus Aduan?") },
             text = { Text("Apakah kamu yakin ingin menghapus Aduan ini?") }
         )
+    }
+}
+@Composable
+fun ReportListSkeleton() {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(5) { // Tampilkan 5 dummy item
+            ReportItemSkeleton()
+        }
+    }
+}
+
+@Composable
+fun ReportItemSkeleton() {
+    val isDarkTheme = isSystemInDarkTheme()
+    val cardColor = if (isDarkTheme) Color(0xFF1F1F1F) else Color.White
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = cardColor)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Dummy Gambar
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .shimmerEffect()
+                )
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    // Dummy Judul (Lokasi)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.8f)
+                            .height(20.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Dummy Label
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.5f)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Dummy Tanggal
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(0.4f)
+                            .height(14.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Dummy Badge Status
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(24.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .shimmerEffect()
+                    )
+                }
+            }
+        }
     }
 }

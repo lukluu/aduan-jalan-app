@@ -30,21 +30,40 @@ class ProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
 
+    // State khusus untuk Swipe Refresh
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
-        loadProfile()
+        loadProfile(isInitialLoad = true)
     }
 
-    fun loadProfile() {
+    // Update fungsi loadProfile untuk menerima parameter
+    fun loadProfile(isInitialLoad: Boolean = false) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            if (isInitialLoad) {
+                // Jika load awal, nyalakan skeleton
+                _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+            } else {
+                // Jika refresh, nyalakan spinner refresh
+                _isRefreshing.value = true
+            }
+
             repository.getProfile()
                 .onSuccess { response ->
                     _uiState.update { it.copy(isLoading = false, user = response) }
+                    _isRefreshing.value = false // Matikan spinner
                 }
                 .onFailure { error ->
                     _uiState.update { it.copy(isLoading = false, errorMessage = error.message) }
+                    _isRefreshing.value = false // Matikan spinner
                 }
         }
+    }
+
+    // Fungsi khusus dipanggil oleh UI saat ditarik
+    fun refreshProfile() {
+        loadProfile(isInitialLoad = false)
     }
 
     fun updateProfile(

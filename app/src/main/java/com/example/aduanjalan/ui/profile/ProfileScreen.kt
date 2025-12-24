@@ -11,6 +11,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -32,6 +33,9 @@ import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.aduanjalan.ui.component.BottomBar
 import com.example.aduanjalan.ui.theme.PrimaryColor
+import com.example.aduanjalan.ui.utils.shimmerEffect
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
 
 // Sealed class tidak berubah
@@ -51,6 +55,8 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState() // Ambil state refreshing
+
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -104,7 +110,6 @@ fun ProfileScreen(
     )
 
     Scaffold(
-        // --- LANGKAH 2: TERAPKAN WARNA LATAR BELAKANG ---
         containerColor = scaffoldBackgroundColor,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
@@ -115,79 +120,105 @@ fun ProfileScreen(
         },
         bottomBar = { BottomBar(navController = navController) }
     ) { innerPadding ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState()),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Spacer(modifier = Modifier.height(24.dp))
-                // Foto Profil
-                Box(contentAlignment = Alignment.BottomEnd) {
-                    Image(
-                        painter = rememberAsyncImagePainter(
-                            model = imageUri ?: (if (imageUrl != null) "https://aduanjalanapi.bemftuho.id/storage/$imageUrl" else null),
-                            error = rememberVectorPainter(image = Icons.Default.AccountCircle),
-                            placeholder = rememberVectorPainter(image = Icons.Default.AccountCircle)
-                        ),
-                        contentDescription = "Foto Profil",
+
+        // LOGIKA UTAMA DISINI
+        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+
+            // KONDISI 1: Loading Awal (Data kosong & sedang loading) -> Tampilkan Skeleton
+            if (uiState.isLoading && uiState.user == null) {
+                ProfileSkeleton()
+            }
+            // KONDISI 2: Data sudah ada atau selesai loading -> Tampilkan Konten dengan SwipeRefresh
+            else {
+                SwipeRefresh(
+                    state = rememberSwipeRefreshState(isRefreshing),
+                    onRefresh = { viewModel.refreshProfile() },
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Column(
                         modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
-                            .border(2.dp, PrimaryColor, CircleShape)
-                            // Terapkan warna placeholder dinamis
-                            .background(imagePlaceholderBgColor),
-                        contentScale = ContentScale.Crop
-                    )
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Foto",
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryColor)
-                            .clickable { galleryLauncher.launch("image/*") }
-                            .padding(8.dp)
-                    )
-                }
+                            .fillMaxSize()
+                            .verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
+                        // --- Bagian Foto Profil ---
+                        Box(contentAlignment = Alignment.BottomEnd) {
+                            Image(
+                                painter = rememberAsyncImagePainter(
+                                    model = imageUri ?: (if (imageUrl != null) "https://aduanjalanapi.bemftuho.id/storage/$imageUrl" else null),
+                                    error = rememberVectorPainter(image = Icons.Default.AccountCircle),
+                                    placeholder = rememberVectorPainter(image = Icons.Default.AccountCircle)
+                                ),
+                                contentDescription = "Foto Profil",
+                                modifier = Modifier
+                                    .size(120.dp)
+                                    .clip(CircleShape)
+                                    .border(2.dp, PrimaryColor, CircleShape)
+                                    .background(imagePlaceholderBgColor),
+                                contentScale = ContentScale.Crop
+                            )
+                            // Tombol Edit Foto
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = "Edit Foto",
+                                tint = Color.White,
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .clip(CircleShape)
+                                    .background(PrimaryColor)
+                                    .clickable { galleryLauncher.launch("image/*") }
+                                    .padding(8.dp)
+                            )
+                        }
 
-                // Terapkan warna teks dinamis
-                Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = textColorPrimary)
-                Text(email, fontSize = 16.sp, color = textColorSecondary)
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
+                        // --- Bagian Teks Header ---
+                        Text(name, fontSize = 22.sp, fontWeight = FontWeight.Bold, color = textColorPrimary)
+                        Text(email, fontSize = 16.sp, color = textColorSecondary)
 
-                // Daftar Item Profil
-                ProfileItem(icon = Icons.Default.Person, label = "Nama Lengkap", value = name) {
-                    editingValue = name
-                    currentSheetState = EditSheetState.Name("Ubah Nama Lengkap")
-                }
-                ProfileItem(icon = Icons.Default.Email, label = "Email", value = email, isEditable = false)
-                ProfileItem(icon = Icons.Default.Phone, label = "Nomor Telepon", value = telephone) {
-                    editingValue = telephone
-                    currentSheetState = EditSheetState.Telephone("Ubah Nomor Telepon")
-                }
-                ProfileItem(icon = Icons.Default.Home, label = "Alamat", value = address) {
-                    editingValue = address
-                    currentSheetState = EditSheetState.Address("Ubah Alamat")
-                }
-                ProfileItem(icon = Icons.Default.Wc, label = "Jenis Kelamin", value = gender) {
-                    currentSheetState = EditSheetState.Gender("Pilih Jenis Kelamin")
-                }
-                ProfileItem(icon = Icons.Default.Lock, label = "Ubah Password", value = "********") {
-                    editingValue = ""
-                    passwordConfirmation = ""
-                    currentSheetState = EditSheetState.Password("Ubah Password")
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // --- Daftar Item Profil ---
+                        ProfileItem(icon = Icons.Default.Person, label = "Nama Lengkap", value = name) {
+                            editingValue = name
+                            currentSheetState = EditSheetState.Name("Ubah Nama Lengkap")
+                        }
+                        ProfileItem(icon = Icons.Default.Email, label = "Email", value = email, isEditable = false)
+                        ProfileItem(icon = Icons.Default.Phone, label = "Nomor Telepon", value = telephone) {
+                            editingValue = telephone
+                            currentSheetState = EditSheetState.Telephone("Ubah Nomor Telepon")
+                        }
+                        ProfileItem(icon = Icons.Default.Home, label = "Alamat", value = address) {
+                            editingValue = address
+                            currentSheetState = EditSheetState.Address("Ubah Alamat")
+                        }
+                        ProfileItem(icon = Icons.Default.Wc, label = "Jenis Kelamin", value = gender) {
+                            currentSheetState = EditSheetState.Gender("Pilih Jenis Kelamin")
+                        }
+                        ProfileItem(icon = Icons.Default.Lock, label = "Ubah Password", value = "********") {
+                            editingValue = ""
+                            passwordConfirmation = ""
+                            currentSheetState = EditSheetState.Password("Ubah Password")
+                        }
+
+                        // Spacer tambahan di bawah agar tidak tertutup bottom bar/scroll mentok
+                        Spacer(modifier = Modifier.height(32.dp))
+                    }
                 }
             }
 
-            if (uiState.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            // Loading Indicator (Overlay) saat Update Data (bukan saat get profile awal)
+            if (uiState.isLoading && uiState.user != null) {
+                // Opsional: Tampilkan loading transparan jika sedang update profil (simpan data)
+                Box(
+                    modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha=0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = PrimaryColor)
+                }
             }
         }
     }
@@ -321,5 +352,93 @@ fun ProfileItem(
             }
         }
         Divider(color = dividerColor, modifier = Modifier.padding(horizontal = 16.dp))
+    }
+}
+@Composable
+fun ProfileSkeleton() {
+    val isDarkTheme = isSystemInDarkTheme()
+    val baseColor = if (isDarkTheme) Color.DarkGray else Color.LightGray
+    val cardColor = if (isDarkTheme) Color(0xFF1F1F1F) else Color.White
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Skeleton Foto Profil (Bulat)
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .shimmerEffect()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Skeleton Nama
+        Box(
+            modifier = Modifier
+                .width(180.dp)
+                .height(24.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Skeleton Email
+        Box(
+            modifier = Modifier
+                .width(120.dp)
+                .height(16.dp)
+                .clip(RoundedCornerShape(4.dp))
+                .shimmerEffect()
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Skeleton List Item (Looping 5 kali)
+        repeat(5) {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Skeleton Icon
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .shimmerEffect()
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        // Skeleton Label Kecil
+                        Box(
+                            modifier = Modifier
+                                .width(80.dp)
+                                .height(12.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        // Skeleton Value Besar
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.6f)
+                                .height(18.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .shimmerEffect()
+                        )
+                    }
+                }
+                Divider(color = baseColor.copy(alpha = 0.2f), modifier = Modifier.padding(horizontal = 16.dp))
+            }
+        }
     }
 }
