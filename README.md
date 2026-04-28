@@ -74,4 +74,19 @@ Aplikasi ini digunakan untuk membantu masyarakat dalam melaporkan kerusakan jala
 Sistem dilengkapi dengan deteksi otomatis berbasis AI serta metode perhitungan prioritas untuk membantu pemerintah menentukan penanganan yang lebih efektif.
 
 ini conoth realtimneya
-<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe id="js_video_iframe" src="https://jumpshare.com/embed/3wpxckSUXTUZTTx62L87" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
+## 🎥 Demo Realtime Deteksi Kerusakan Jalan (YOLO)
+
+
+https://github.com/user-attachments/assets/d52707d7-9955-4bcc-966c-0949bd4ff183
+
+
+
+https://github.com/user-attachments/assets/983ded48-9dc9-4738-92ae-e9a0b55f40f3
+
+
+
+<p align="center">
+  Klik gambar untuk menonton demo realtime aplikasi
+</p>
+
+Demo ini menampilkan proses deteksi kerusakan jalan secara langsung menggunakan model YOLO melalui kamera perangkat Android, lengkap dengan bounding box dan klasifikasi otomatis.
