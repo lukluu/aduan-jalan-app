@@ -11,6 +11,8 @@ import com.example.aduanjalan.data.remote.response.LoginResponse
 import com.example.aduanjalan.data.remote.response.MyReportWrapper
 import com.example.aduanjalan.data.remote.response.ProfileResponse
 import com.example.aduanjalan.data.remote.response.RegisterResponse
+import com.example.aduanjalan.data.remote.response.WilayahDetailResponse
+import com.example.aduanjalan.data.remote.response.WilayahListResponse
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import retrofit2.Response
@@ -22,6 +24,7 @@ import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.Part
 import retrofit2.http.Path
+import retrofit2.http.Query
 
 interface LaravelApiService {
 
@@ -98,5 +101,14 @@ interface LaravelApiService {
         @Part("password_confirmation") passwordConfirmation: RequestBody?
     ): ProfileResponse
 
+    // 🗺️ Wilayah (Roads) - INI YANG BARU DITAMBAHKAN
+    @GET("wilayah")
+    suspend fun getWilayah(
+        @Query("q") query: String? = null // Opsional: untuk pencarian nama jalan
+    ): WilayahListResponse
 
+    @GET("wilayah/{id}")
+    suspend fun getWilayahDetail(
+        @Path("id") id: Int
+    ): WilayahDetailResponse
 }
