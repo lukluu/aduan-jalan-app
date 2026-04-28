@@ -74,8 +74,4 @@ Aplikasi ini digunakan untuk membantu masyarakat dalam melaporkan kerusakan jala
 Sistem dilengkapi dengan deteksi otomatis berbasis AI serta metode perhitungan prioritas untuk membantu pemerintah menentukan penanganan yang lebih efektif.
 
 ini conoth realtimneya
-<p align="center">
-  <a href="https://jumpshare.com/s/3wpxckSUXTUZTTx62L87">
-    <img src="https://github.com/user-attachments/assets/a0325076-04de-4dbd-88c3-e7432481794b" width="300"/>
-  </a>
-</p>
+<div style="position: relative; padding-bottom: 56.25%; height: 0;"><iframe id="js_video_iframe" src="https://jumpshare.com/embed/3wpxckSUXTUZTTx62L87" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe></div>
