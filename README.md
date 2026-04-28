@@ -1,7 +1,7 @@
 ## 📱 Halaman Utama
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/9566586d-2498-4f8f-81b3-9bf02a1ae9a5" width="100"/>
+  <img src="https://github.com/user-attachments/assets/9566586d-2498-4f8f-81b3-9bf02a1ae9a5" width="200"/>
 </p>
 
 <p align="center">
@@ -12,7 +12,7 @@
 ## 📍 Pilih Lokasi Aduan
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/7e3dbae7-0598-40ae-9c89-2e129577e156" width="100"/>
+  <img src="https://github.com/user-attachments/assets/7e3dbae7-0598-40ae-9c89-2e129577e156" width="200"/>
 </p>
 
 
@@ -30,7 +30,7 @@ Pengguna dapat memilih titik lokasi langsung pada peta interaktif.
 ## 🗺️ Map Aduan
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/93a221e7-183f-4f04-b55f-1d0c0b9e8c0f" width="100"/>
+  <img src="https://github.com/user-attachments/assets/93a221e7-183f-4f04-b55f-1d0c0b9e8c0f" width="200"/>
 </p>
 
 Halaman ini menampilkan seluruh aduan yang telah dikirim oleh pengguna lain dalam bentuk peta.
@@ -46,7 +46,7 @@ Halaman ini menampilkan seluruh aduan yang telah dikirim oleh pengguna lain dala
 ## 📋 Daftar Semua Aduan
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/56b371c0-1baa-4d0c-977d-aa5a0bb6027c" width="100"/>
+  <img src="https://github.com/user-attachments/assets/56b371c0-1baa-4d0c-977d-aa5a0bb6027c" width="200"/>
 </p>
 
 Halaman ini menampilkan daftar laporan kerusakan jalan dalam bentuk list yang terurut berdasarkan prioritas.
@@ -71,4 +71,11 @@ Halaman ini menampilkan daftar laporan kerusakan jalan dalam bentuk list yang te
 ## 📌 Deskripsi Singkat
 
 Aplikasi ini digunakan untuk membantu masyarakat dalam melaporkan kerusakan jalan secara real-time.  
-Sistem dilengkapi dengan deteksi otomatis berbasis AI serta metode perhitungan prioritas untuk membantu pemerintah menentukan penanganan yang lebih efektif.<img width="165" height="323" alt="image" src="https://github.com/user-attachments/assets/ac82c716-1b01-454b-94b7-effc2152fbe2" />
+Sistem dilengkapi dengan deteksi otomatis berbasis AI serta metode perhitungan prioritas untuk membantu pemerintah menentukan penanganan yang lebih efektif.
+
+ini conoth realtimneya
+<p align="center">
+  <a href="https://jumpshare.com/s/3wpxckSUXTUZTTx62L87">
+    <img src="https://github.com/user-attachments/assets/a0325076-04de-4dbd-88c3-e7432481794b" width="300"/>
+  </a>
+</p>
